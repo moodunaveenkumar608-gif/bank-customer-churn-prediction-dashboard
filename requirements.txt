@@ -1,7 +1,10 @@
-fastapi
-uvicorn
 streamlit
-requests
 pandas
 scikit-learn
 joblib
+plotly
+pillow
+requests
+fastapi
+uvicorn
+pydantic
