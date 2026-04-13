@@ -137,8 +137,8 @@ if st.button("🔍 Predict Churn", use_container_width=True):
 
     try:
         response = requests.post(
-            "http://127.0.0.1:8000/predict",
-            json=data
+            "https://bank-customer-churn-prediction-dashboard.onrender.com/predict",
+             json=data
         )
 
         if response.status_code == 200:
