@@ -1,10 +1,10 @@
 import streamlit as st
-import joblib
 import pandas as pd
 import plotly.graph_objects as go
 import plotly.express as px
 from PIL import Image
 import os
+import requests
 
 # -----------------------------------
 # Page Configuration
@@ -65,11 +65,6 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # -----------------------------------
-# Load Model
-# -----------------------------------
-model = joblib.load("churn_model.pkl")
-
-# -----------------------------------
 # Header Image
 # -----------------------------------
 if os.path.exists("bank.jpg"):
@@ -126,42 +121,39 @@ with col2:
 # -----------------------------------
 if st.button("🔍 Predict Churn", use_container_width=True):
 
-    input_dict = {feature: 0 for feature in model.feature_names_in_}
+    data = {
+        "credit_score": int(credit_score),
+        "age": int(age),
+        "tenure": int(tenure),
+        "balance": float(balance),
+        "products_number": int(num_products),
+        "credit_card": 1 if has_card == "Yes" else 0,
+        "active_member": 1 if is_active == "Yes" else 0,
+        "estimated_salary": float(estimated_salary),
+        "country_Germany": 1 if geography == "Germany" else 0,
+        "country_Spain": 1 if geography == "Spain" else 0,
+        "gender_Male": 1 if gender == "Male" else 0
+    }
 
-    if "CreditScore" in input_dict:
-        input_dict["CreditScore"] = credit_score
-    if "Age" in input_dict:
-        input_dict["Age"] = age
-    if "Tenure" in input_dict:
-        input_dict["Tenure"] = tenure
-    if "Balance" in input_dict:
-        input_dict["Balance"] = balance
-    if "NumOfProducts" in input_dict:
-        input_dict["NumOfProducts"] = num_products
-    if "HasCrCard" in input_dict:
-        input_dict["HasCrCard"] = 1 if has_card == "Yes" else 0
-    if "IsActiveMember" in input_dict:
-        input_dict["IsActiveMember"] = 1 if is_active == "Yes" else 0
-    if "EstimatedSalary" in input_dict:
-        input_dict["EstimatedSalary"] = estimated_salary
+    try:
+        response = requests.post(
+            "http://127.0.0.1:8000/predict",
+            json=data
+        )
 
-    if "Gender" in input_dict:
-        input_dict["Gender"] = 1 if gender == "Male" else 0
-    if "Gender_Male" in input_dict:
-        input_dict["Gender_Male"] = 1 if gender == "Male" else 0
+        if response.status_code == 200:
+            result = response.json()
 
-    if "Geography_France" in input_dict:
-        input_dict["Geography_France"] = 1 if geography == "France" else 0
-    if "Geography_Germany" in input_dict:
-        input_dict["Geography_Germany"] = 1 if geography == "Germany" else 0
-    if "Geography_Spain" in input_dict:
-        input_dict["Geography_Spain"] = 1 if geography == "Spain" else 0
+            prediction = result["prediction"]
+            probability = result["churn_probability"]
 
-    input_data = pd.DataFrame([input_dict])[model.feature_names_in_]
+        else:
+            st.error("Prediction failed. Please check the FastAPI server.")
+            st.stop()
 
-    prediction = model.predict(input_data)[0]
-    probability = model.predict_proba(input_data)[0][1] if hasattr(model, "predict_proba") else None
-
+    except requests.exceptions.ConnectionError:
+        st.error("FastAPI server is not running. Please start FastAPI first.")
+        st.stop()
     st.markdown("---")
     st.markdown('<div class="section-title">Prediction Result</div>', unsafe_allow_html=True)
 
@@ -175,36 +167,34 @@ if st.button("🔍 Predict Churn", use_container_width=True):
             st.success("✅ This customer is likely to stay with the bank.")
             risk_level = "Low"
 
-        if probability is not None:
-            st.markdown(f"### Churn Probability: **{probability:.2%}**")
-            if probability < 0.40:
-                st.info("Risk Level: Low")
-                risk_level = "Low"
-            elif probability < 0.70:
-                st.warning("Risk Level: Medium")
-                risk_level = "Medium"
-            else:
-                st.error("Risk Level: High")
-                risk_level = "High"
+        st.markdown(f"### Churn Probability: **{probability:.2%}**")
+        if probability < 0.40:
+            st.info("Risk Level: Low")
+            risk_level = "Low"
+        elif probability < 0.70:
+            st.warning("Risk Level: Medium")
+            risk_level = "Medium"
+        else:
+            st.error("Risk Level: High")
+            risk_level = "High"
 
     with result_col2:
-        if probability is not None:
-            fig = go.Figure(go.Indicator(
-                mode="gauge+number",
-                value=probability * 100,
-                title={"text": "Churn Risk (%)"},
-                gauge={
-                    "axis": {"range": [0, 100]},
-                    "bar": {"color": "#12344D"},
-                    "steps": [
-                        {"range": [0, 40], "color": "#B7E4C7"},
-                        {"range": [40, 70], "color": "#FFE8A1"},
-                        {"range": [70, 100], "color": "#F4A6A6"}
-                    ]
-                }
-            ))
-            fig.update_layout(height=330)
-            st.plotly_chart(fig, use_container_width=True)
+        fig = go.Figure(go.Indicator(
+            mode="gauge+number",
+            value=probability * 100,
+            title={"text": "Churn Risk (%)"},
+            gauge={
+                "axis": {"range": [0, 100]},
+                "bar": {"color": "#12344D"},
+                "steps": [
+                    {"range": [0, 40], "color": "#B7E4C7"},
+                    {"range": [40, 70], "color": "#FFE8A1"},
+                    {"range": [70, 100], "color": "#F4A6A6"}
+                ]
+            }
+        ))
+        fig.update_layout(height=330)
+        st.plotly_chart(fig, use_container_width=True)
 
     st.markdown("---")
     st.markdown('<div class="section-title">Customer Input Summary</div>', unsafe_allow_html=True)
@@ -223,7 +213,6 @@ if st.button("🔍 Predict Churn", use_container_width=True):
 
     st.dataframe(summary_df, use_container_width=True)
 
-    # Save prediction history
     history_row = pd.DataFrame([{
         "CreditScore": credit_score,
         "Age": age,
@@ -236,7 +225,7 @@ if st.button("🔍 Predict Churn", use_container_width=True):
         "Gender": gender,
         "Geography": geography,
         "Prediction": "Leave" if prediction == 1 else "Stay",
-        "Probability": float(probability * 100) if probability is not None else None,
+        "Probability": float(probability * 100),
         "RiskLevel": risk_level
     }])
 
