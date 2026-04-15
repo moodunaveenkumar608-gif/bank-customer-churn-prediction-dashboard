@@ -328,6 +328,47 @@ if os.path.exists("history.csv"):
         st.info("No prediction history yet. Make your first prediction above.")
 else:
     st.info("No prediction history yet. Make your first prediction above.")
+st.markdown("---")
+st.markdown("## Model Monitoring Dashboard")
+
+try:
+    history_df = pd.read_csv("prediction_history.csv")
+
+    total_predictions = len(history_df)
+    avg_churn_probability = history_df["churn_probability"].mean()
+    churn_count = (history_df["prediction"] == 1).sum()
+    not_churn_count = (history_df["prediction"] == 0).sum()
+
+    col1, col2, col3 = st.columns(3)
+
+    with col1:
+        st.metric("Total Predictions", total_predictions)
+
+    with col2:
+        st.metric("Average Churn Probability", f"{avg_churn_probability:.2%}")
+
+    with col3:
+        st.metric("Likely to Churn", churn_count)
+
+    st.markdown("### Last 10 Predictions")
+    st.dataframe(history_df.tail(10), use_container_width=True)
+
+    st.markdown("### Prediction Distribution")
+    prediction_counts = history_df["prediction"].value_counts().sort_index()
+    st.bar_chart(prediction_counts)
+
+except FileNotFoundError:
+    st.info("No prediction history available yet.")
+
+st.markdown("### Churn Probability Trend")
+
+history_df["timestamp"] = pd.to_datetime(history_df["timestamp"])
+
+trend_data = history_df[["timestamp", "churn_probability"]]
+
+st.line_chart(
+    trend_data.set_index("timestamp")
+)
 
 # -----------------------------------
 # Footer

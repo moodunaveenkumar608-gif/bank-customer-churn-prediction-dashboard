@@ -1,11 +1,21 @@
 from fastapi import FastAPI
-from pydantic import BaseModel, Field
+import os
 import joblib
 import pandas as pd
+import logging
+from pydantic import BaseModel, Field, model_validator
 
 app = FastAPI()
 
+# Load trained model
 model = joblib.load("churn_model.pkl")
+
+# Configure logging
+logging.basicConfig(
+    filename="prediction_logs.txt",
+    level=logging.INFO,
+    format="%(asctime)s - %(message)s"
+)
 
 
 class CustomerData(BaseModel):
@@ -21,6 +31,14 @@ class CustomerData(BaseModel):
     country_Spain: int = Field(..., ge=0, le=1)
     gender_Male: int = Field(..., ge=0, le=1)
 
+    @model_validator(mode="after")
+    def validate_country(self):
+        if self.country_Germany == 1 and self.country_Spain == 1:
+            raise ValueError(
+                "A customer cannot belong to both Germany and Spain."
+            )
+        return self
+
 
 @app.get("/")
 def home():
@@ -29,6 +47,7 @@ def home():
 
 @app.post("/predict")
 def predict(data: CustomerData):
+
     sample = pd.DataFrame([{
         "credit_score": data.credit_score,
         "age": data.age,
@@ -46,20 +65,59 @@ def predict(data: CustomerData):
     prediction = model.predict(sample)[0]
     probabilities = model.predict_proba(sample)[0]
 
-    not_churn_confidence = float(probabilities[0])
-    churn_confidence = float(probabilities[1])
+    not_churn_probability = float(probabilities[0])
+    churn_probability = float(probabilities[1])
 
     if prediction == 1:
         result = "The customer is likely to churn"
-        confidence = churn_confidence
+        confidence = churn_probability
     else:
         result = "The customer is not likely to churn"
-        confidence = not_churn_confidence
+        confidence = not_churn_probability
+
+    # Save text log
+    logging.info(
+        f"Input: {data.model_dump()} | "
+        f"Prediction: {prediction} | "
+        f"Not Churn Probability: {not_churn_probability:.4f} | "
+        f"Churn Probability: {churn_probability:.4f}"
+    )
+
+    # Save prediction history to CSV
+    history_row = pd.DataFrame([{
+        "timestamp": pd.Timestamp.now(),
+        "credit_score": data.credit_score,
+        "age": data.age,
+        "country_Germany": data.country_Germany,
+        "country_Spain": data.country_Spain,
+        "prediction": int(prediction),
+        "churn_probability": round(churn_probability, 4)
+    }])
+
+    csv_path = os.path.join(
+        os.path.dirname(__file__),
+        "prediction_history.csv"
+    )
+
+    print("Saving file to:", csv_path)
+
+    if os.path.exists(csv_path):
+        history_row.to_csv(
+            csv_path,
+            mode="a",
+            header=False,
+            index=False
+        )
+    else:
+        history_row.to_csv(
+            csv_path,
+            index=False
+        )
 
     return {
         "prediction": int(prediction),
         "result": result,
         "confidence": round(confidence, 4),
-        "not_churn_probability": round(not_churn_confidence, 4),
-        "churn_probability": round(churn_confidence, 4)
+        "not_churn_probability": round(not_churn_probability, 4),
+        "churn_probability": round(churn_probability, 4)
     }
