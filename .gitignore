@@ -1,0 +1,5 @@
+history.csv
+prediction_history.csv
+prediction_logs.txt
+__pycache__/
+.ipynb_checkpoints/
