@@ -87,6 +87,12 @@ The model predicts:
 * FastAPI backend with validation
 * Error handling when backend is unavailable
 * Live API integration between Streamlit and FastAPI
+* Input validation using Pydantic
+FastAPI backend for prediction API
+Live API deployment on Render
+Prediction logging
+Prediction history saved to CSV
+Monitoring dashboard in Streamlit
 
 ---
 
