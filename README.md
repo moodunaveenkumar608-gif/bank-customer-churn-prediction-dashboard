@@ -94,12 +94,20 @@ Prediction logging
 Prediction history saved to CSV
 Monitoring dashboard in Streamlit
 
+MLOps Features
+API-based prediction service
+Input validation
+Logging to text file
+Prediction history tracking
+Monitoring dashboard
+Frontend and backend deployment
+
 ---
 
 # 🏗️ Project Architecture
 
 ```text
-User → Streamlit Frontend → FastAPI Backend → ML Model → Result
+User → Streamlit Frontend → FastAPI Backend → ML Model → Logs + Prediction History → Monitoring Dashboard
 ```
 
 ---
