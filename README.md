@@ -98,10 +98,15 @@ Monitoring dashboard in Streamlit
 ## MLOps Features
 
 API-based prediction service
+
 Input validation
+
 Logging to text file
+
 Prediction history tracking
+
 Monitoring dashboard
+
 Frontend and backend deployment
 
 ---
