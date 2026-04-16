@@ -94,7 +94,9 @@ Prediction logging
 Prediction history saved to CSV
 Monitoring dashboard in Streamlit
 
-MLOps Features
+
+## MLOps Features
+
 API-based prediction service
 Input validation
 Logging to text file
