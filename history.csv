@@ -1,4 +1,0 @@
-CreditScore,Age,Tenure,Balance,EstimatedSalary,NumProducts,HasCard,IsActive,Gender,Geography,Prediction,Probability,RiskLevel
-650,35,5,50000.0,50000.0,1,Yes,Yes,Male,France,Stay,24.0,Low
-650,35,5,50000.0,50000.0,1,Yes,Yes,Male,France,Stay,24.0,Low
-671,35,9,60000.0,70000.01,1,Yes,Yes,Male,France,Stay,24.0,Low

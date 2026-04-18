@@ -8,8 +8,10 @@ from pydantic import BaseModel, Field, model_validator
 app = FastAPI()
 
 # Load trained model
-model = joblib.load("churn_model.pkl")
+MODEL_VERSION = "v1"
+MODEL_PATH = f"models/churn_model_{MODEL_VERSION}.pkl"
 
+model = joblib.load(MODEL_PATH)
 # Configure logging
 logging.basicConfig(
     filename="prediction_logs.txt",
@@ -115,9 +117,10 @@ def predict(data: CustomerData):
         )
 
     return {
-        "prediction": int(prediction),
-        "result": result,
-        "confidence": round(confidence, 4),
-        "not_churn_probability": round(not_churn_probability, 4),
-        "churn_probability": round(churn_probability, 4)
-    }
+    "prediction": int(prediction),
+    "result": result,
+    "confidence": round(confidence, 4),
+    "not_churn_probability": round(not_churn_probability, 4),
+    "churn_probability": round(churn_probability, 4),
+    "model_version": MODEL_VERSION
+}

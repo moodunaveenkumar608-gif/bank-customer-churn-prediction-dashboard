@@ -7,6 +7,12 @@ import os
 import requests
 
 # -----------------------------------
+# Constants
+# -----------------------------------
+FASTAPI_URL = "http://fastapi:8000/predict"
+HISTORY_FILE = "history.csv"
+
+# -----------------------------------
 # Page Configuration
 # -----------------------------------
 st.set_page_config(
@@ -69,12 +75,15 @@ st.markdown("""
 # -----------------------------------
 if os.path.exists("bank.jpg"):
     image = Image.open("bank.jpg")
-    st.image(image, use_container_width=True)
+    st.image(image, width="stretch")
 
 # -----------------------------------
 # Header
 # -----------------------------------
-st.markdown('<div class="main-title">🏦 Bank Customer Churn Prediction Dashboard</div>', unsafe_allow_html=True)
+st.markdown(
+    '<div class="main-title">🏦 Bank Customer Churn Prediction Dashboard</div>',
+    unsafe_allow_html=True
+)
 st.markdown(
     '<div class="sub-title">Predict whether a customer is likely to leave the bank using a machine learning model, visualize churn risk, and track prediction history.</div>',
     unsafe_allow_html=True
@@ -119,7 +128,7 @@ with col2:
 # -----------------------------------
 # Prediction Button
 # -----------------------------------
-if st.button("🔍 Predict Churn", use_container_width=True):
+if st.button("🔍 Predict Churn", width="stretch"):
 
     data = {
         "credit_score": int(credit_score),
@@ -136,38 +145,41 @@ if st.button("🔍 Predict Churn", use_container_width=True):
     }
 
     try:
-        response = requests.post(
-            "https://bank-customer-churn-prediction-dashboard.onrender.com/predict",
-             json=data
-        )
+        response = requests.post(FASTAPI_URL, json=data, timeout=10)
 
         if response.status_code == 200:
             result = response.json()
-
             prediction = result["prediction"]
             probability = result["churn_probability"]
-
         else:
-            st.error("Prediction failed. Please check the FastAPI server.")
+            st.error(f"Prediction failed. FastAPI returned status code {response.status_code}.")
             st.stop()
 
     except requests.exceptions.ConnectionError:
-        st.error("FastAPI server is not running. Please start FastAPI first.")
+        st.error("FastAPI server is not running. Please start the FastAPI container first.")
         st.stop()
+    except requests.exceptions.Timeout:
+        st.error("The request timed out. Please try again.")
+        st.stop()
+    except Exception as e:
+        st.error(f"Unexpected error: {e}")
+        st.stop()
+
     st.markdown("---")
     st.markdown('<div class="section-title">Prediction Result</div>', unsafe_allow_html=True)
+
+    st.info(f"Model Version Used: {result.get('model_version', 'N/A')}")
 
     result_col1, result_col2 = st.columns([1, 1])
 
     with result_col1:
         if prediction == 1:
             st.error("⚠️ This customer is likely to leave the bank.")
-            risk_level = "High"
         else:
             st.success("✅ This customer is likely to stay with the bank.")
-            risk_level = "Low"
 
         st.markdown(f"### Churn Probability: **{probability:.2%}**")
+
         if probability < 0.40:
             st.info("Risk Level: Low")
             risk_level = "Low"
@@ -194,7 +206,7 @@ if st.button("🔍 Predict Churn", use_container_width=True):
             }
         ))
         fig.update_layout(height=330)
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
 
     st.markdown("---")
     st.markdown('<div class="section-title">Customer Input Summary</div>', unsafe_allow_html=True)
@@ -211,28 +223,32 @@ if st.button("🔍 Predict Churn", use_container_width=True):
         ]
     })
 
-    st.dataframe(summary_df, use_container_width=True)
+    # Fix mixed datatype issue
+    summary_df["Value"] = summary_df["Value"].astype(str)
+
+    st.dataframe(summary_df, width="stretch")
 
     history_row = pd.DataFrame([{
-        "CreditScore": credit_score,
-        "Age": age,
-        "Tenure": tenure,
-        "Balance": balance,
-        "EstimatedSalary": estimated_salary,
-        "NumProducts": num_products,
+        "CreditScore": int(credit_score),
+        "Age": int(age),
+        "Tenure": int(tenure),
+        "Balance": float(balance),
+        "EstimatedSalary": float(estimated_salary),
+        "NumProducts": int(num_products),
         "HasCard": has_card,
         "IsActive": is_active,
         "Gender": gender,
         "Geography": geography,
         "Prediction": "Leave" if prediction == 1 else "Stay",
         "Probability": float(probability * 100),
-        "RiskLevel": risk_level
+        "RiskLevel": risk_level,
+        "ModelVersion": result.get("model_version", "N/A")
     }])
 
-    if os.path.exists("history.csv"):
-        history_row.to_csv("history.csv", mode="a", header=False, index=False)
+    if os.path.exists(HISTORY_FILE):
+        history_row.to_csv(HISTORY_FILE, mode="a", header=False, index=False)
     else:
-        history_row.to_csv("history.csv", index=False)
+        history_row.to_csv(HISTORY_FILE, index=False)
 
 # -----------------------------------
 # Dashboard Section
@@ -240,8 +256,8 @@ if st.button("🔍 Predict Churn", use_container_width=True):
 st.markdown("---")
 st.markdown('<div class="section-title">Prediction Dashboard</div>', unsafe_allow_html=True)
 
-if os.path.exists("history.csv"):
-    history = pd.read_csv("history.csv")
+if os.path.exists(HISTORY_FILE):
+    history = pd.read_csv(HISTORY_FILE)
 
     if not history.empty:
         total_predictions = len(history)
@@ -289,7 +305,7 @@ if os.path.exists("history.csv"):
                     title="Prediction Distribution",
                     hole=0.4
                 )
-                st.plotly_chart(pie_fig, use_container_width=True)
+                st.plotly_chart(pie_fig, width="stretch")
 
         with chart_col2:
             if "Geography" in history.columns:
@@ -302,7 +318,7 @@ if os.path.exists("history.csv"):
                     title="Predictions by Geography",
                     text_auto=True
                 )
-                st.plotly_chart(bar_fig, use_container_width=True)
+                st.plotly_chart(bar_fig, width="stretch")
 
         if "Age" in history.columns:
             hist_fig = px.histogram(
@@ -311,10 +327,10 @@ if os.path.exists("history.csv"):
                 nbins=20,
                 title="Age Distribution of Predicted Customers"
             )
-            st.plotly_chart(hist_fig, use_container_width=True)
+            st.plotly_chart(hist_fig, width="stretch")
 
         st.markdown('<div class="section-title">Prediction History</div>', unsafe_allow_html=True)
-        st.dataframe(history, use_container_width=True)
+        st.dataframe(history, width="stretch")
 
         csv = history.to_csv(index=False).encode("utf-8")
         st.download_button(
@@ -322,53 +338,66 @@ if os.path.exists("history.csv"):
             data=csv,
             file_name="prediction_history.csv",
             mime="text/csv",
-            use_container_width=True
+            width="stretch"
         )
     else:
         st.info("No prediction history yet. Make your first prediction above.")
 else:
     st.info("No prediction history yet. Make your first prediction above.")
+
+# -----------------------------------
+# Model Monitoring Dashboard
+# -----------------------------------
 st.markdown("---")
 st.markdown("## Model Monitoring Dashboard")
 
-try:
-    history_df = pd.read_csv("prediction_history.csv")
+if os.path.exists(HISTORY_FILE):
+    try:
+        history_df = pd.read_csv(HISTORY_FILE)
 
-    total_predictions = len(history_df)
-    avg_churn_probability = history_df["churn_probability"].mean()
-    churn_count = (history_df["prediction"] == 1).sum()
-    not_churn_count = (history_df["prediction"] == 0).sum()
+        if not history_df.empty:
+            total_predictions = len(history_df)
 
-    col1, col2, col3 = st.columns(3)
+            avg_probability = (
+                history_df["Probability"].mean() / 100
+                if "Probability" in history_df.columns else 0
+            )
 
-    with col1:
-        st.metric("Total Predictions", total_predictions)
+            churn_count = (
+                (history_df["Prediction"] == "Leave").sum()
+                if "Prediction" in history_df.columns else 0
+            )
 
-    with col2:
-        st.metric("Average Churn Probability", f"{avg_churn_probability:.2%}")
+            col1, col2, col3 = st.columns(3)
 
-    with col3:
-        st.metric("Likely to Churn", churn_count)
+            with col1:
+                st.metric("Total Predictions", total_predictions)
 
-    st.markdown("### Last 10 Predictions")
-    st.dataframe(history_df.tail(10), use_container_width=True)
+            with col2:
+                st.metric("Average Churn Probability", f"{avg_probability:.2%}")
 
-    st.markdown("### Prediction Distribution")
-    prediction_counts = history_df["prediction"].value_counts().sort_index()
-    st.bar_chart(prediction_counts)
+            with col3:
+                st.metric("Likely to Churn", churn_count)
 
-except FileNotFoundError:
+            st.markdown("### Last 10 Predictions")
+            st.dataframe(history_df.tail(10), width="stretch")
+
+            if "Prediction" in history_df.columns:
+                st.markdown("### Prediction Distribution")
+                prediction_counts = history_df["Prediction"].value_counts()
+                st.bar_chart(prediction_counts)
+
+            if "Probability" in history_df.columns:
+                st.markdown("### Churn Probability Trend")
+                trend_data = history_df[["Probability"]].copy()
+                trend_data.index = range(1, len(trend_data) + 1)
+                st.line_chart(trend_data)
+        else:
+            st.info("No prediction history available yet.")
+    except Exception as e:
+        st.warning(f"Could not load monitoring dashboard: {e}")
+else:
     st.info("No prediction history available yet.")
-
-st.markdown("### Churn Probability Trend")
-
-history_df["timestamp"] = pd.to_datetime(history_df["timestamp"])
-
-trend_data = history_df[["timestamp", "churn_probability"]]
-
-st.line_chart(
-    trend_data.set_index("timestamp")
-)
 
 # -----------------------------------
 # Footer
