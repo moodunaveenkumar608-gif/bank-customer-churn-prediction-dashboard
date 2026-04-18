@@ -145,7 +145,7 @@ if st.button("🔍 Predict Churn", width="stretch"):
     }
 
     try:
-        response = requests.post(FASTAPI_URL, json=data, timeout=10)
+        response = requests.post(FASTAPI_URL, json=data, timeout=60)
 
         if response.status_code == 200:
             result = response.json()
