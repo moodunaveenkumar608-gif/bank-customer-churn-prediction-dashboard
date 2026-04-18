@@ -4,51 +4,55 @@ An end-to-end machine learning project that predicts whether a bank customer is 
 
 This project includes:
 
-* A frontend built with Streamlit
-* A backend API built with FastAPI
-* A trained Random Forest machine learning model
-* Live deployment using Streamlit Community Cloud and Render
+* a **Streamlit frontend**
+* a **FastAPI backend**
+* a trained **Random Forest Classifier**
+* **Dockerized setup**
+* **CI pipeline with GitHub Actions**
+* deployed services using **Streamlit Community Cloud** and **Render**
 
 ---
 
-# 🚀 Live Demo
+## 🚀 Live Demo
 
 ### Streamlit App
 
-[https://bank-customer-churn-prediction-dashboard-bzt4hqmo7zwymfzq5awat.streamlit.app/](https://bank-customer-churn-prediction-dashboard-bzt4hqmo7zwymfzq5awat.streamlit.app/)
+[Bank Customer Churn Prediction Dashboard](https://bank-customer-churn-prediction-dashboard-bzt4hqmo7zwymfzq5awat.streamlit.app/)
 
 ### FastAPI Documentation
 
-[https://bank-customer-churn-prediction-dashboard.onrender.com/docs](https://bank-customer-churn-prediction-dashboard.onrender.com/docs)
+[FastAPI Swagger Docs](https://bank-customer-churn-prediction-dashboard.onrender.com/docs)
 
 ### GitHub Repository
 
-[https://github.com/moodunaveenkumar608-gif/bank-customer-churn-prediction-dashboard](https://github.com/moodunaveenkumar608-gif/bank-customer-churn-prediction-dashboard)
+[GitHub Repository](https://github.com/moodunaveenkumar608-gif/bank-customer-churn-prediction-dashboard)
 
 ---
 
-# 📌 Project Overview
+## 📌 Project Overview
 
-Customer churn is one of the biggest challenges for banks. This project predicts whether a customer is likely to leave the bank based on factors such as:
+Customer churn is one of the biggest challenges for banks. This project predicts whether a customer is likely to leave the bank based on customer details such as:
 
 * Credit score
 * Age
+* Tenure
 * Balance
 * Number of products
 * Geography
 * Gender
 * Estimated salary
+* Credit card ownership
 * Active membership status
 
-The model returns:
+The application returns:
 
-* Churn prediction
-* Churn probability
-* Risk level (Low / Medium / High)
+* churn prediction
+* churn probability
+* risk level (**Low / Medium / High**)
 
 ---
 
-# 🛠️ Technologies Used
+## 🛠️ Technologies Used
 
 * Python
 * Streamlit
@@ -58,60 +62,54 @@ The model returns:
 * Plotly
 * Joblib
 * Requests
+* Docker
+* GitHub Actions
 * Render
 * Streamlit Community Cloud
 
 ---
 
-# 🧠 Machine Learning Model
+## 🧠 Machine Learning Model
 
-* Model Used: Random Forest Classifier
-* Target Variable: Customer Churn
-* Saved Model Format: `churn_model.pkl`
+* **Model Used:** Random Forest Classifier
+* **Target Variable:** Customer Churn
+* **Saved Model Format:** `churn_model.pkl`
 
-The model predicts:
+Prediction output:
 
 * `0` → Customer is likely to stay
 * `1` → Customer is likely to leave
 
 ---
 
-# ✨ Features
+## ✨ Features
 
-* Predict customer churn
+* Predict customer churn in real time
 * Display churn probability
 * Show risk level using a gauge chart
 * Store prediction history in CSV format
 * Download prediction history
-* Beautiful Streamlit dashboard
-* FastAPI backend with validation
+* Visualize prediction history in a dashboard
+* FastAPI backend with request validation
 * Error handling when backend is unavailable
-* Live API integration between Streamlit and FastAPI
-* Input validation using Pydantic
-FastAPI backend for prediction API
-Live API deployment on Render
-Prediction logging
-Prediction history saved to CSV
-Monitoring dashboard in Streamlit
-
-
-## MLOps Features
-
-API-based prediction service
-
-Input validation
-
-Logging to text file
-
-Prediction history tracking
-
-Monitoring dashboard
-
-Frontend and backend deployment
+* Live integration between Streamlit and FastAPI
+* Logging and monitoring support
 
 ---
 
-# 🏗️ Project Architecture
+## ⚙️ MLOps Features
+
+* API-based prediction service
+* Input validation with Pydantic
+* Dockerized application
+* Prediction logging
+* Prediction history tracking
+* Monitoring dashboard
+* Continuous Integration (CI) using GitHub Actions
+
+---
+
+## 🏗️ Project Architecture
 
 ```text
 User → Streamlit Frontend → FastAPI Backend → ML Model → Logs + Prediction History → Monitoring Dashboard
@@ -119,39 +117,45 @@ User → Streamlit Frontend → FastAPI Backend → ML Model → Logs + Predicti
 
 ---
 
-# 📂 Project Structure
+## 📂 Project Structure
 
 ```text
 Bank_Churn_Prediction/
 │
-├── app.py                  # Streamlit frontend
-├── main.py                 # FastAPI backend
-├── churn_model.pkl         # Trained ML model
-├── requirements.txt        # Required libraries
-├── history.csv             # Saved prediction history
-├── README.md               # Project documentation
-├── Dockerfile              # Docker configuration (future deployment)
-└── test_model.py           # Model testing script
+├── .github/
+│   └── workflows/
+│       └── ci.yml              # GitHub Actions CI pipeline
+├── models/                     # Model-related files
+├── app.py                      # Streamlit frontend
+├── main.py                     # FastAPI backend
+├── churn_model.pkl             # Trained ML model
+├── Dockerfile                  # Docker image configuration
+├── docker-compose.yml          # Multi-container setup
+├── requirements.txt            # Required libraries
+├── test_model.py               # Model/API test file
+├── README.md                   # Project documentation
+├── .gitignore
+└── .dockerignore
 ```
 
 ---
 
-# ⚙️ Installation and Local Setup
+## ⚙️ Installation and Local Setup
 
-## 1. Clone the Repository
+### 1. Clone the Repository
 
 ```bash
 git clone https://github.com/moodunaveenkumar608-gif/bank-customer-churn-prediction-dashboard.git
 cd bank-customer-churn-prediction-dashboard
 ```
 
-## 2. Install Dependencies
+### 2. Install Dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
-## 3. Run FastAPI Backend
+### 3. Run FastAPI Backend
 
 ```bash
 uvicorn main:app --reload
@@ -169,7 +173,7 @@ API documentation:
 http://127.0.0.1:8000/docs
 ```
 
-## 4. Run Streamlit Frontend
+### 4. Run Streamlit Frontend
 
 Open another terminal and run:
 
@@ -185,7 +189,20 @@ http://localhost:8501
 
 ---
 
-# 🔗 API Endpoint
+## 🐳 Run with Docker
+
+```bash
+docker compose up --build
+```
+
+Services:
+
+* Streamlit → `http://localhost:8501`
+* FastAPI Docs → `http://localhost:8000/docs`
+
+---
+
+## 🔗 API Endpoint
 
 ### POST `/predict`
 
@@ -215,31 +232,44 @@ Example response:
   "result": "The customer is not likely to churn",
   "confidence": 0.61,
   "not_churn_probability": 0.61,
-  "churn_probability": 0.39
+  "churn_probability": 0.39,
+  "model_version": "v1"
 }
+```
 
 ---
 
-# 📈 Future Improvements
+## ✅ CI Pipeline
 
-* Docker deployment
-* User authentication
-* Database integration
-* Cloud deployment with AWS or Azure
-* CI/CD pipeline
-* Improved model performance
+This project includes a GitHub Actions CI workflow that automatically:
 
----
+* checks repository files
+* installs dependencies
+* validates Python syntax
+* builds Docker services
 
-# 👨‍💻 Author
-
-Moodu Naveenkumar
-
-Aspiring Data Scientist passionate about Machine Learning, FastAPI, Streamlit, and building real-world projects.
+This helps ensure the project remains stable whenever code is pushed to GitHub.
 
 ---
 
-# ⭐ If You Like This Project
+## 📈 Future Improvements
 
-If you found this project useful, please give the repository a star on GitHub!
+* Add automated tests for API endpoints
+* Store prediction history in a database
+* Add user authentication
+* Improve model performance with hyperparameter tuning
+* Add Continuous Deployment (CD)
+* Deploy a fully containerized version to cloud platforms such as AWS, Azure, or Railway
 
+---
+
+## 👨‍💻 Author
+
+**Moodu Naveenkumar**
+Aspiring Data Scientist passionate about Machine Learning, FastAPI, Streamlit, Docker, and building real-world projects.
+
+---
+
+## ⭐ Support
+
+If you found this project useful, please give it a star on GitHub.
