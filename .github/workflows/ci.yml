@@ -33,7 +33,7 @@ jobs:
           [ -f app.py ] || (echo "app.py not found" && exit 1)
           [ -f main.py ] || (echo "main.py not found" && exit 1)
           [ -f requirements.txt ] || (echo "requirements.txt not found" && exit 1)
-          [ -f dockerfile ] || (echo "Dockerfile not found" && exit 1)
+          [ -f Dockerfile ] || (echo "Dockerfile not found" && exit 1)
           [ -f docker-compose.yml ] || (echo "docker-compose.yml not found" && exit 1)
 
       - name: Check Python syntax
