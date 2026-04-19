@@ -9,7 +9,7 @@ import requests
 # -----------------------------------
 # Constants
 # -----------------------------------
-FASTAPI_URL = "https://bank-customer-churn-prediction-dashboard.onrender.com/predict"
+FASTAPI_URL = "https://bank-churn-fastapi-app-fkb2bmcpb4bwdrbn.centralus-01.azurewebsites.net/predict"
 HISTORY_FILE = "history.csv"
 
 # -----------------------------------
