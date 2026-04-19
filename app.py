@@ -73,7 +73,10 @@ st.markdown("""
 # -----------------------------------
 # Header Image
 # -----------------------------------
-if os.path.exists("bank.jpg"):
+if os.path.exists("Bank.jpg"):
+    image = Image.open("Bank.jpg")
+    st.image(image, width="stretch")
+elif os.path.exists("bank.jpg"):
     image = Image.open("bank.jpg")
     st.image(image, width="stretch")
 
@@ -88,6 +91,8 @@ st.markdown(
     '<div class="sub-title">Predict whether a customer is likely to leave the bank using a machine learning model, visualize churn risk, and track prediction history.</div>',
     unsafe_allow_html=True
 )
+
+st.caption(f"Backend URL: {FASTAPI_URL}")
 
 st.markdown("---")
 
@@ -149,14 +154,20 @@ if st.button("🔍 Predict Churn", width="stretch"):
 
         if response.status_code == 200:
             result = response.json()
+            st.write("Raw API Response:", result)
+
             prediction = result["prediction"]
             probability = result["churn_probability"]
         else:
             st.error(f"Prediction failed. FastAPI returned status code {response.status_code}.")
+            try:
+                st.json(response.json())
+            except Exception:
+                st.write(response.text)
             st.stop()
 
     except requests.exceptions.ConnectionError:
-        st.error("FastAPI server is not running. Please start the FastAPI container first.")
+        st.error("FastAPI server is not running or cannot be reached.")
         st.stop()
     except requests.exceptions.Timeout:
         st.error("The request timed out. Please try again.")
@@ -223,9 +234,7 @@ if st.button("🔍 Predict Churn", width="stretch"):
         ]
     })
 
-    # Fix mixed datatype issue
     summary_df["Value"] = summary_df["Value"].astype(str)
-
     st.dataframe(summary_df, width="stretch")
 
     history_row = pd.DataFrame([{
@@ -256,92 +265,96 @@ if st.button("🔍 Predict Churn", width="stretch"):
 st.markdown("---")
 st.markdown('<div class="section-title">Prediction Dashboard</div>', unsafe_allow_html=True)
 
+history = pd.DataFrame()
+
 if os.path.exists(HISTORY_FILE):
-    history = pd.read_csv(HISTORY_FILE)
+    try:
+        history = pd.read_csv(HISTORY_FILE)
+    except Exception:
+        st.warning("History file is corrupted. Delete history.csv and run again if needed.")
+        history = pd.DataFrame()
 
-    if not history.empty:
-        total_predictions = len(history)
-        stay_count = (history["Prediction"] == "Stay").sum() if "Prediction" in history.columns else 0
-        leave_count = (history["Prediction"] == "Leave").sum() if "Prediction" in history.columns else 0
+if not history.empty:
+    total_predictions = len(history)
+    stay_count = (history["Prediction"] == "Stay").sum() if "Prediction" in history.columns else 0
+    leave_count = (history["Prediction"] == "Leave").sum() if "Prediction" in history.columns else 0
 
-        kpi1, kpi2, kpi3 = st.columns(3)
+    kpi1, kpi2, kpi3 = st.columns(3)
 
-        with kpi1:
-            st.markdown(f"""
-            <div class="kpi-card">
-                <div class="kpi-value">{total_predictions}</div>
-                <div class="kpi-label">Total Predictions</div>
-            </div>
-            """, unsafe_allow_html=True)
+    with kpi1:
+        st.markdown(f"""
+        <div class="kpi-card">
+            <div class="kpi-value">{total_predictions}</div>
+            <div class="kpi-label">Total Predictions</div>
+        </div>
+        """, unsafe_allow_html=True)
 
-        with kpi2:
-            st.markdown(f"""
-            <div class="kpi-card">
-                <div class="kpi-value">{stay_count}</div>
-                <div class="kpi-label">Likely to Stay</div>
-            </div>
-            """, unsafe_allow_html=True)
+    with kpi2:
+        st.markdown(f"""
+        <div class="kpi-card">
+            <div class="kpi-value">{stay_count}</div>
+            <div class="kpi-label">Likely to Stay</div>
+        </div>
+        """, unsafe_allow_html=True)
 
-        with kpi3:
-            st.markdown(f"""
-            <div class="kpi-card">
-                <div class="kpi-value">{leave_count}</div>
-                <div class="kpi-label">Likely to Leave</div>
-            </div>
-            """, unsafe_allow_html=True)
+    with kpi3:
+        st.markdown(f"""
+        <div class="kpi-card">
+            <div class="kpi-value">{leave_count}</div>
+            <div class="kpi-label">Likely to Leave</div>
+        </div>
+        """, unsafe_allow_html=True)
 
-        st.markdown("<br>", unsafe_allow_html=True)
+    st.markdown("<br>", unsafe_allow_html=True)
 
-        chart_col1, chart_col2 = st.columns(2)
+    chart_col1, chart_col2 = st.columns(2)
 
-        with chart_col1:
-            if "Prediction" in history.columns:
-                pred_counts = history["Prediction"].value_counts().reset_index()
-                pred_counts.columns = ["Prediction", "Count"]
-                pie_fig = px.pie(
-                    pred_counts,
-                    names="Prediction",
-                    values="Count",
-                    title="Prediction Distribution",
-                    hole=0.4
-                )
-                st.plotly_chart(pie_fig, width="stretch")
-
-        with chart_col2:
-            if "Geography" in history.columns:
-                geo_counts = history["Geography"].value_counts().reset_index()
-                geo_counts.columns = ["Geography", "Count"]
-                bar_fig = px.bar(
-                    geo_counts,
-                    x="Geography",
-                    y="Count",
-                    title="Predictions by Geography",
-                    text_auto=True
-                )
-                st.plotly_chart(bar_fig, width="stretch")
-
-        if "Age" in history.columns:
-            hist_fig = px.histogram(
-                history,
-                x="Age",
-                nbins=20,
-                title="Age Distribution of Predicted Customers"
+    with chart_col1:
+        if "Prediction" in history.columns:
+            pred_counts = history["Prediction"].value_counts().reset_index()
+            pred_counts.columns = ["Prediction", "Count"]
+            pie_fig = px.pie(
+                pred_counts,
+                names="Prediction",
+                values="Count",
+                title="Prediction Distribution",
+                hole=0.4
             )
-            st.plotly_chart(hist_fig, width="stretch")
+            st.plotly_chart(pie_fig, width="stretch")
 
-        st.markdown('<div class="section-title">Prediction History</div>', unsafe_allow_html=True)
-        st.dataframe(history, width="stretch")
+    with chart_col2:
+        if "Geography" in history.columns:
+            geo_counts = history["Geography"].value_counts().reset_index()
+            geo_counts.columns = ["Geography", "Count"]
+            bar_fig = px.bar(
+                geo_counts,
+                x="Geography",
+                y="Count",
+                title="Predictions by Geography",
+                text_auto=True
+            )
+            st.plotly_chart(bar_fig, width="stretch")
 
-        csv = history.to_csv(index=False).encode("utf-8")
-        st.download_button(
-            label="⬇ Download Prediction History",
-            data=csv,
-            file_name="prediction_history.csv",
-            mime="text/csv",
-            width="stretch"
+    if "Age" in history.columns:
+        hist_fig = px.histogram(
+            history,
+            x="Age",
+            nbins=20,
+            title="Age Distribution of Predicted Customers"
         )
-    else:
-        st.info("No prediction history yet. Make your first prediction above.")
+        st.plotly_chart(hist_fig, width="stretch")
+
+    st.markdown('<div class="section-title">Prediction History</div>', unsafe_allow_html=True)
+    st.dataframe(history, width="stretch")
+
+    csv = history.to_csv(index=False).encode("utf-8")
+    st.download_button(
+        label="⬇ Download Prediction History",
+        data=csv,
+        file_name="prediction_history.csv",
+        mime="text/csv",
+        width="stretch"
+    )
 else:
     st.info("No prediction history yet. Make your first prediction above.")
 
@@ -351,49 +364,44 @@ else:
 st.markdown("---")
 st.markdown("## Model Monitoring Dashboard")
 
-if os.path.exists(HISTORY_FILE):
+if not history.empty:
     try:
-        history_df = pd.read_csv(HISTORY_FILE)
+        total_predictions = len(history)
 
-        if not history_df.empty:
-            total_predictions = len(history_df)
+        avg_probability = (
+            history["Probability"].mean() / 100
+            if "Probability" in history.columns else 0
+        )
 
-            avg_probability = (
-                history_df["Probability"].mean() / 100
-                if "Probability" in history_df.columns else 0
-            )
+        churn_count = (
+            (history["Prediction"] == "Leave").sum()
+            if "Prediction" in history.columns else 0
+        )
 
-            churn_count = (
-                (history_df["Prediction"] == "Leave").sum()
-                if "Prediction" in history_df.columns else 0
-            )
+        col1, col2, col3 = st.columns(3)
 
-            col1, col2, col3 = st.columns(3)
+        with col1:
+            st.metric("Total Predictions", total_predictions)
 
-            with col1:
-                st.metric("Total Predictions", total_predictions)
+        with col2:
+            st.metric("Average Churn Probability", f"{avg_probability:.2%}")
 
-            with col2:
-                st.metric("Average Churn Probability", f"{avg_probability:.2%}")
+        with col3:
+            st.metric("Likely to Churn", churn_count)
 
-            with col3:
-                st.metric("Likely to Churn", churn_count)
+        st.markdown("### Last 10 Predictions")
+        st.dataframe(history.tail(10), width="stretch")
 
-            st.markdown("### Last 10 Predictions")
-            st.dataframe(history_df.tail(10), width="stretch")
+        if "Prediction" in history.columns:
+            st.markdown("### Prediction Distribution")
+            prediction_counts = history["Prediction"].value_counts()
+            st.bar_chart(prediction_counts)
 
-            if "Prediction" in history_df.columns:
-                st.markdown("### Prediction Distribution")
-                prediction_counts = history_df["Prediction"].value_counts()
-                st.bar_chart(prediction_counts)
-
-            if "Probability" in history_df.columns:
-                st.markdown("### Churn Probability Trend")
-                trend_data = history_df[["Probability"]].copy()
-                trend_data.index = range(1, len(trend_data) + 1)
-                st.line_chart(trend_data)
-        else:
-            st.info("No prediction history available yet.")
+        if "Probability" in history.columns:
+            st.markdown("### Churn Probability Trend")
+            trend_data = history[["Probability"]].copy()
+            trend_data.index = range(1, len(trend_data) + 1)
+            st.line_chart(trend_data)
     except Exception as e:
         st.warning(f"Could not load monitoring dashboard: {e}")
 else:
